@@ -330,6 +330,7 @@ impl FrameData {
     }
 
     /// Writes one Frame into a stream, prefixed by it's length (u32 le).
+    #[cfg(not(target_arch = "wasm32"))] // serialization not supported on wasm
     #[cfg(feature = "serialization")]
     pub fn write_into(&self, write: &mut impl std::io::Write) -> anyhow::Result<()> {
         use bincode::Options as _;
@@ -394,7 +395,7 @@ impl FrameData {
                 let mut compressed = vec![0_u8; compressed_length];
                 read.read_exact(&mut compressed)?;
 
-                let serialized = zstd::decode_all(&compressed[..]).context("zstd decompress")?;
+                let serialized = decode_zstd(&compressed[..])?;
 
                 use bincode::Options as _;
                 let mut frame: Self = bincode::options()
@@ -515,6 +516,30 @@ impl ThreadProfiler {
         }
         THREAD_PROFILER.with(|p| f(&mut p.borrow_mut()))
     }
+}
+
+// ----------------------------------------------------------------------------
+
+#[cfg(feature = "serialization")]
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "zstd")]
+fn decode_zstd(bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+    use anyhow::Context as _;
+    zstd::decode_all(bytes).context("zstd decompress")
+}
+
+#[cfg(feature = "serialization")]
+#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "ruzstd")]
+fn decode_zstd(mut bytes: &[u8]) -> anyhow::Result<Vec<u8>> {
+    use anyhow::Context as _;
+    use std::io::Read as _;
+    let mut decoded = Vec::new();
+    let mut decoder = ruzstd::StreamingDecoder::new(&mut bytes).context("zstd decompress")?;
+    decoder
+        .read_to_end(&mut decoded)
+        .context("zstd decompress")?;
+    Ok(decoded)
 }
 
 // ----------------------------------------------------------------------------
