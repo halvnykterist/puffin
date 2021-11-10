@@ -104,7 +104,7 @@ impl Sorting {
         vec
     }
 
-    fn ui(&mut self, ui: &imgui::Ui<'_>) {
+    fn ui(&mut self, ui: &imgui::Ui) {
         ui.text("Sort threads by:");
         ui.same_line();
 
@@ -140,7 +140,7 @@ struct Filter {
 }
 
 impl Filter {
-    fn ui(&mut self, ui: &imgui::Ui<'_>) {
+    fn ui(&mut self, ui: &imgui::Ui) {
         ui.text("Scope filter:");
         ui.same_line();
         ui.input_text("##scopefilter", &mut self.filter).build();
