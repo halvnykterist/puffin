@@ -323,13 +323,13 @@ impl ProfilerUi {
     /// If you want to control the window yourself, use [`Self::ui`] instead.
     pub fn window(&mut self, ui: &Ui) -> bool {
         let mut open = true;
-        imgui::Window::new("Profiler")
+        imgui::Window::new(ui, "Profiler")
             .position([10.0, 25.0], Condition::FirstUseEver)
             .size([800.0, 600.0], Condition::FirstUseEver)
             .bg_alpha(0.99) // Transparency can be distracting
             .always_auto_resize(false)
             .opened(&mut open)
-            .build(ui, || self.ui(ui));
+            .build(|| self.ui(ui));
         open
     }
 
@@ -466,7 +466,7 @@ impl ProfilerUi {
         let draw_list = ui.get_window_draw_list();
 
         // Make it scrollable:
-        imgui::ChildWindow::new("flamegraph").build(ui, || {
+        imgui::ChildWindow::new(ui, "flamegraph").build(|| {
             let info = Info {
                 start_ns: min_ns,
                 canvas_min: content_min,
@@ -477,17 +477,21 @@ impl ProfilerUi {
                 font_size: ui.current_font_size(),
             };
 
-            draw_list.with_clip_rect_intersect(content_min.into(), content_max.into(), || {
-                let max_y = self.ui_canvas(&info, &frame, (min_ns, max_ns));
-                let used_space = Vec2::new(
-                    content_region_avail.x,
-                    content_region_avail.y.max(max_y - content_min.y),
-                );
+            draw_list.with_clip_rect_intersect(
+                <[f32; 2]>::from(content_min),
+                <[f32; 2]>::from(content_max),
+                || {
+                    let max_y = self.ui_canvas(&info, &frame, (min_ns, max_ns));
+                    let used_space = Vec2::new(
+                        content_region_avail.x,
+                        content_region_avail.y.max(max_y - content_min.y),
+                    );
 
-                // An invisible button for the canvas allows us to catch input for it.
-                ui.invisible_button("canvas", used_space.into());
-                self.interact_with_canvas(ui, max_ns - min_ns, (content_min, content_max));
-            });
+                    // An invisible button for the canvas allows us to catch input for it.
+                    ui.invisible_button("canvas", <[f32; 2]>::from(used_space));
+                    self.interact_with_canvas(ui, max_ns - min_ns, (content_min, content_max));
+                },
+            );
         });
     }
 
@@ -635,7 +639,7 @@ impl ProfilerUi {
         let frame_spacing = 2.0;
         let frame_width = frame_width_including_spacing - frame_spacing;
 
-        ui.invisible_button(&ImString::new(label), size.into());
+        ui.invisible_button(&ImString::new(label), <[f32; 2]>::from(size));
         let draw_list = ui.get_window_draw_list();
 
         let selected_frame_index = self.selected_frame_index();
@@ -644,7 +648,7 @@ impl ProfilerUi {
 
         let mut slowest_visible_frame = 0;
 
-        draw_list.with_clip_rect_intersect(min.into(), max.into(), || {
+        draw_list.with_clip_rect_intersect(<[f32; 2]>::from(min), <[f32; 2]>::from(max), || {
             for (i, frame) in frames.iter().enumerate() {
                 let x = max.x - (frames.len() as f32 - i as f32) * frame_width_including_spacing;
                 let mut rect_min = Vec2::new(x, min.y);
@@ -681,7 +685,11 @@ impl ProfilerUi {
                     // Transparent, full height:
                     color[3] = if is_selected || is_hovered { 0.6 } else { 0.25 };
                     draw_list
-                        .add_rect(rect_min.into(), rect_max.into(), color)
+                        .add_rect(
+                            <[f32; 2]>::from(rect_min),
+                            <[f32; 2]>::from(rect_max),
+                            color,
+                        )
                         .filled(true)
                         .build();
 
@@ -689,7 +697,11 @@ impl ProfilerUi {
                     color[3] = 1.0;
                     rect_min.y = lerp(max.y..=min.y, duration as f32 / slowest_frame);
                     draw_list
-                        .add_rect(rect_min.into(), rect_max.into(), color)
+                        .add_rect(
+                            <[f32; 2]>::from(rect_min),
+                            <[f32; 2]>::from(rect_max),
+                            color,
+                        )
                         .filled(true)
                         .build();
                 }
@@ -948,7 +960,11 @@ fn paint_record(
     let text_color = [0.0, 0.0, 0.0, 1.0];
 
     info.draw_list
-        .add_rect(rect_min.into(), rect_max.into(), rect_color)
+        .add_rect(
+            <[f32; 2]>::from(rect_min),
+            <[f32; 2]>::from(rect_max),
+            rect_color,
+        )
         .filled(true)
         .rounding(options.rounding)
         .build();
@@ -958,8 +974,10 @@ fn paint_record(
         let rect_min = rect_min.max(info.canvas_min);
         let rect_max = rect_max.min(info.canvas_max);
 
-        info.draw_list
-            .with_clip_rect_intersect(rect_min.into(), rect_max.into(), || {
+        info.draw_list.with_clip_rect_intersect(
+            <[f32; 2]>::from(rect_min),
+            <[f32; 2]>::from(rect_max),
+            || {
                 let duration_ms = to_ms(record.duration_ns);
                 let text = if record.data.is_empty() {
                     format!("{}{} {:6.3} ms", prefix, record.id, duration_ms)
@@ -977,7 +995,8 @@ fn paint_record(
                     text_color,
                     text,
                 );
-            });
+            },
+        );
     }
 
     if is_hovered {
