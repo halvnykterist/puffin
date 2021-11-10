@@ -286,7 +286,7 @@ struct Info<'a> {
 
     mouse_pos: Vec2,
 
-    ui: &'a Ui<'a>,
+    ui: &'a Ui,
     draw_list: &'a DrawListMut<'a>,
     font_size: f32,
 
@@ -321,7 +321,7 @@ impl ProfilerUi {
 
     /// Show a [`imgui::Window`] with the profiler contents.
     /// If you want to control the window yourself, use [`Self::ui`] instead.
-    pub fn window(&mut self, ui: &Ui<'_>) -> bool {
+    pub fn window(&mut self, ui: &Ui) -> bool {
         let mut open = true;
         imgui::Window::new("Profiler")
             .position([10.0, 25.0], Condition::FirstUseEver)
@@ -374,7 +374,7 @@ impl ProfilerUi {
     /// Show the profiler.
     ///
     /// Call this from within an [`imgui::Window`], or use [`Self::window`] instead.
-    pub fn ui(&mut self, ui: &Ui<'_>) {
+    pub fn ui(&mut self, ui: &Ui) {
         #![allow(clippy::collapsible_else_if)]
 
         if !puffin::are_scopes_on() {
@@ -566,7 +566,7 @@ impl ProfilerUi {
     }
 
     /// Returns hovered, if any
-    fn show_frames(&mut self, ui: &Ui<'_>) -> Option<Arc<FrameData>> {
+    fn show_frames(&mut self, ui: &Ui) -> Option<Arc<FrameData>> {
         let frames = self.frames();
 
         let mut hovered_frame = None;
@@ -621,7 +621,7 @@ impl ProfilerUi {
     /// Returns the slowest visible frame
     fn show_frame_list(
         &mut self,
-        ui: &Ui<'_>,
+        ui: &Ui,
         label: &str,
         frames: &[Arc<FrameData>],
         hovered_frame: &mut Option<Arc<FrameData>>,
@@ -701,7 +701,7 @@ impl ProfilerUi {
 
     fn interact_with_canvas(
         &mut self,
-        ui: &Ui<'_>,
+        ui: &Ui,
         duration_ns: NanoSecond,
         (canvas_min, canvas_max): (Vec2, Vec2),
     ) {
@@ -1111,7 +1111,7 @@ fn paint_merge_scope(
     Ok(result)
 }
 
-fn merge_scope_tooltip(ui: &Ui<'_>, merge: &MergeScope<'_>) {
+fn merge_scope_tooltip(ui: &Ui, merge: &MergeScope<'_>) {
     ui.text(&format!("id:       {}", merge.id));
     if !merge.location.is_empty() {
         ui.text(&format!("location: {}", merge.location));
