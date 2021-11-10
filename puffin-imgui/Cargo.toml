@@ -13,7 +13,7 @@ keywords = ["profiler", "instrumentation", "gamedev"]
 include = ["**/*.rs", "Cargo.toml"]
 
 [dependencies]
-imgui = { version = "0.8" }
+imgui = { git = "https://github.com/imgui-rs/imgui-rs" }
 natord = "1.0.9"
 puffin = { version = "0.10.1", path = "../puffin" }
 serde = { version = "1", features = ["derive"] }
